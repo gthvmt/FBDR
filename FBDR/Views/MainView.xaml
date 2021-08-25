@@ -1,0 +1,126 @@
+﻿<UserControl x:Class="FBDR.Views.MainView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:FBDR"
+             xmlns:models="clr-namespace:FBDR.Models"
+             xmlns:conv="clr-namespace:FBDR.Converter"
+             mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <conv:PathTypeToIconConverter x:Key="PathTypeToIconConverter"
+                                      FileIcon="{StaticResource File}"
+                                      DirectoryIcon="{StaticResource Folder}"
+                                      ArchiveIcon="{StaticResource Archive}"/>
+        <Viewbox x:Key="FileIcon" x:Shared="false" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+            <Canvas Width="44.63" Height="59.506001" Canvas.Left="0" Canvas.Top="0">
+                <Polygon xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Points="25.685,18.247 25.685,77.753 70.315,77.753 70.315,33.124 55.438,18.247 " Name="polygon2" FillRule="NonZero" Fill="#FFFFFFFF">
+                    <Polygon.RenderTransform>
+                        <TranslateTransform X="-25.685" Y="-18.247"/>
+                    </Polygon.RenderTransform>
+                </Polygon>
+            </Canvas>
+        </Viewbox>
+
+        <Viewbox x:Key="DirectoryIcon" x:Shared="false" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+            <Canvas Width="46" Height="32" Canvas.Left="0" Canvas.Top="0">
+                <Rectangle xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Canvas.Left="-9" Canvas.Top="-16" Width="64" Height="64" Name="rect96" StrokeMiterLimit="2" StrokeLineJoin="Round"/>
+                <Path xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Name="path98" Fill="#FFFFFFFF" StrokeMiterLimit="2" StrokeLineJoin="Round">
+                    <Path.Data>
+                        <PathGeometry Figures="M 0 0 V 32 H 46 V 5 H 21 L 19 0 Z" FillRule="EvenOdd"/>
+                    </Path.Data>
+                </Path>
+            </Canvas>
+        </Viewbox>
+        <Viewbox x:Key="ArchiveIcon" x:Shared="false" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+            <Canvas Width="13.5" Height="24" Canvas.Left="0" Canvas.Top="0">
+                <Canvas>
+                    <Canvas.RenderTransform>
+                        <TranslateTransform X="-2.2501"/>
+                    </Canvas.RenderTransform>
+                    <Canvas>
+                        <Polygon xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Points="8,17 10,17 10,15 8,15 " Name="polygon146" FillRule="EvenOdd" Fill="#FFFFFFFF" StrokeThickness="1"/>
+                        <Path xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Name="path148" Fill="#FFFFFFFF" StrokeThickness="1">
+                            <Path.Data>
+                                <PathGeometry Figures="M 13.4141 0 H 1e-4 v 24 h 8 v -5 h -1 c -0.553 0 -1 -0.448 -1 -1 v -4 c 0 -0.552 0.447 -1 1 -1 h 1 v -1 h -1 c -0.553 0 -1 -0.448 -1 -1 0 -0.552 0.447 -1 1 -1 h 1 V 9 h -1 c -0.553 0 -1 -0.448 -1 -1 0 -0.552 0.447 -1 1 -1 h 1 V 5 c 0 -0.552 0.447 -1 1 -1 0.553 0 1 0.448 1 1 v 2 h 1 c 0.553 0 1 0.448 1 1 0 0.552 -0.447 1 -1 1 h -1 v 1 h 1 c 0.553 0 1 0.448 1 1 0 0.552 -0.447 1 -1 1 h -1 v 1 h 1 c 0.553 0 1 0.448 1 1 v 4 c 0 0.552 -0.447 1 -1 1 h -1 v 5 h 8 V 4.586 Z" FillRule="EvenOdd"/>
+                            </Path.Data>
+                        </Path>
+                    </Canvas>
+                </Canvas>
+            </Canvas>
+        </Viewbox>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <Menu DockPanel.Dock="Top" Background="{StaticResource Gray}">
+            <MenuItem Header="_Optionen" FontSize="{StaticResource DefaultFontSize}">
+                <MenuItem Header="{x:Static local:OptionSections.GeneralSection}"
+                          Command="{Binding ConfigureOptionsCommand}"
+                          CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Header}"/>
+                <MenuItem Header="{x:Static local:OptionSections.FontsSection}"
+                          Command="{Binding ConfigureOptionsCommand}"
+                          CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Header}"/>
+                <MenuItem Header="{x:Static local:OptionSections.MarginsSection}"
+                          Command="{Binding ConfigureOptionsCommand}"
+                          CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Header}"/>
+            </MenuItem>
+        </Menu>
+        <Grid Background="White" Margin="5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="1.5*"/>
+            </Grid.RowDefinitions>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="300" Grid.Row="0" Margin="0,0,0,5" >
+                <ItemsControl ItemsSource="{Binding SelectedPaths}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Background="{StaticResource Gray}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid Grid.Column="0" Width="50" Height="50" Margin="5" Background="{StaticResource FacebookBlue}">
+                                    <ContentControl Margin="10" HorizontalAlignment="Center">
+                                        <ContentControl.Style>
+                                            <Style TargetType="{x:Type ContentControl}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Type}"
+                                                             Value="{x:Static models:PathType.File}">
+                                                        <Setter Property="Content" Value="{StaticResource FileIcon}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Type}"
+                                                             Value="{x:Static models:PathType.Directory}">
+                                                        <Setter Property="Content" Value="{StaticResource DirectoryIcon}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Type}"
+                                                             Value="{x:Static models:PathType.Archive}">
+                                                        <Setter Property="Content" Value="{StaticResource ArchiveIcon}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ContentControl.Style>
+                                    </ContentControl>
+                                </Grid>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                                    <TextBlock Text="{Binding Path}"/>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <Grid Grid.Row="1" Margin="0,0,0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Margin="0,0,5,0" Content="Datei(en) auswählen" Command="{Binding SelectFilesCommand}"/>
+                <Button Grid.Column="1" Content="Ordner auswählen" Command="{Binding SelectDirectoriesCommand}"/>
+            </Grid>
+            <Button Grid.Row="2" Content="Rendern" Command="{Binding RenderCommand}"/>
+        </Grid>
+    </DockPanel>
+</UserControl>

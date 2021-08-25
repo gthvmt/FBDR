@@ -1,0 +1,19 @@
+﻿<Window x:Class="FBDR.Views.Shell"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FBDR"
+        mc:Ignorable="d"
+        xmlns:prism="http://prismlibrary.com/"
+        Title="FBDR"
+        Icon="/Resources/Icons/AppIcon.png"
+        Height="400" Width="700"
+        MinHeight="500" MinWidth="700">
+    
+    <DockPanel Background="White">
+        <!--<ContentControl DockPanel.Dock="Top" prism:RegionManager.RegionName="{x:Static local:RegionNames.RibbonRegion}"/>-->
+        <ContentControl DockPanel.Dock="Bottom" prism:RegionManager.RegionName="{x:Static local:RegionNames.StatusBarRegion}"/>
+        <ContentControl DockPanel.Dock="Top" prism:RegionManager.RegionName="{x:Static local:RegionNames.ContentRegion}"/>
+    </DockPanel>
+</Window>

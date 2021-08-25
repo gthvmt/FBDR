@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This file is NOT compatible with Silverlight-->
+<Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+  <Canvas Name="svg154" Width="13.5" Height="24" Canvas.Left="0" Canvas.Top="0">
+    <Canvas.RenderTransform>
+      <TranslateTransform X="0" Y="0"/>
+    </Canvas.RenderTransform>
+    <Canvas.Resources/>
+    <!--Unknown tag: sodipodi:namedview-->
+    <Canvas Name="g152">
+      <Canvas.RenderTransform>
+        <TranslateTransform X="-2.2501"/>
+      </Canvas.RenderTransform>
+      <Canvas Name="g150">
+        <Polygon xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Points="8,17 10,17 10,15 8,15 " Name="polygon146" FillRule="EvenOdd" Fill="#FFFFFFFF" StrokeThickness="1"/>
+        <Path xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Name="path148" Fill="#FFFFFFFF" StrokeThickness="1">
+          <Path.Data>
+            <PathGeometry Figures="M 13.4141 0 H 1e-4 v 24 h 8 v -5 h -1 c -0.553 0 -1 -0.448 -1 -1 v -4 c 0 -0.552 0.447 -1 1 -1 h 1 v -1 h -1 c -0.553 0 -1 -0.448 -1 -1 0 -0.552 0.447 -1 1 -1 h 1 V 9 h -1 c -0.553 0 -1 -0.448 -1 -1 0 -0.552 0.447 -1 1 -1 h 1 V 5 c 0 -0.552 0.447 -1 1 -1 0.553 0 1 0.448 1 1 v 2 h 1 c 0.553 0 1 0.448 1 1 0 0.552 -0.447 1 -1 1 h -1 v 1 h 1 c 0.553 0 1 0.448 1 1 0 0.552 -0.447 1 -1 1 h -1 v 1 h 1 c 0.553 0 1 0.448 1 1 v 4 c 0 0.552 -0.447 1 -1 1 h -1 v 5 h 8 V 4.586 Z" FillRule="EvenOdd"/>
+          </Path.Data>
+        </Path>
+      </Canvas>
+    </Canvas>
+    <!--Unknown tag: metadata-->
+  </Canvas>
+</Viewbox>
