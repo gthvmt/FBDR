@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
-    <StatusBar Background="{StaticResource FacebookBlue}" Visibility="{Binding Visibility}">
+    <StatusBar Background="{StaticResource Gray}" Visibility="{Binding Visibility}">
         <StatusBar.ItemsPanel>
             <ItemsPanelTemplate>
                 <Grid>
@@ -18,19 +18,16 @@
                         <ColumnDefinition Width="auto"/>
                         <ColumnDefinition Width="auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="auto"/>
                     </Grid.ColumnDefinitions>
                 </Grid>
             </ItemsPanelTemplate>
         </StatusBar.ItemsPanel>
 
-        <StatusBarItem Grid.Column="0" Foreground="White" Content="Status:"/>
-        <StatusBarItem Grid.Column="1" Foreground="White" Content="{Binding StatusText}"/>
+        <StatusBarItem Grid.Column="0" Content="Status:"/>
+        <StatusBarItem Grid.Column="1" Content="{Binding StatusText}"/>
 
         <StatusBarItem Grid.Column="2" HorizontalContentAlignment="Stretch">
             <ProgressBar Visibility="{Binding ProgressVisibility}" Value="{Binding Progress}" Maximum="{Binding ProgressMax}" Height="20" Foreground="{StaticResource FacebookBlue}"/>
         </StatusBarItem>
-
-        <!--<StatusBarItem Grid.Column="3" Foreground="White" Content="🏠"/>-->
     </StatusBar>
 </UserControl>

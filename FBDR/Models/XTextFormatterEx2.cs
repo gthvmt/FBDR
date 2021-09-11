@@ -6,6 +6,8 @@ using System.Text;
 using PdfSharpCore.Drawing;
 using PdfSharpCore.Drawing.Layout;
 using PdfSharpCore.Pdf.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace PdfSharpCore.Drawing.Layout
 {
@@ -43,8 +45,8 @@ namespace PdfSharpCore.Drawing.Layout
         public struct LayoutOptions
         {
             public float Spacing;
-
             public SpacingMode SpacingMode;
+            public bool TrimWhiteSpaces;
         }
 
         /// <summary>
@@ -79,12 +81,13 @@ namespace PdfSharpCore.Drawing.Layout
         }
         string _text;
 
+        private const string BULLET_POINT = "•";
+
         /// <summary>
         /// Gets the <see cref="XRect"/> of the last written line
         /// </summary>
-        public XRect LastLineRect => BoundingBoxes[^1];
+        public XRect? LastLineRect => BoundingBoxes.Count > 0 ? BoundingBoxes[^1] : null;
         public double InitialXIndent { get; set; }
-
         /// <summary>
         /// Gets a list of bounding boxes for each line drawn
         /// </summary>
@@ -253,7 +256,6 @@ namespace PdfSharpCore.Drawing.Layout
         /// <exception cref="ArgumentNullException"></exception>
         public void DrawString(XBrush brush, XStringFormat format)
         {
-            // TODO: Do we need "XStringFormat format" at PrepareDrawString or at DrawString? Not yet used anyway, but probably already needed at PrepareDrawString.
             if (!_preparedText)
                 throw new ArgumentException("PrepareDrawString must be called first.");
             if (brush == null)
@@ -310,6 +312,57 @@ namespace PdfSharpCore.Drawing.Layout
         void CreateBlocks()
         {
             _blocks.Clear();
+            var matches = Regex.Matches(_text, @"[\s\-?]");
+            var startIndex = 0;
+            Block block = null;
+            bool @return = false;
+            foreach (Match match in matches)
+            {
+                bool handled = false;
+                var text = _text.Substring(startIndex - (@return ? 1 : 0), match.Index - startIndex);
+                if (match.Value == "\r")
+                {
+                    @return = true;
+                    startIndex++;
+                    continue;
+                }
+                else if (match.Value == "\n" || match.Value == "\r\n")
+                {
+                    block = new Block(BlockType.LineBreak);
+                    handled = true;
+                }
+                //else if (text.Length == 0)
+                //        continue;
+                else if (string.IsNullOrWhiteSpace(match.Value))
+                {
+                    block = new Block(BlockType.Space);
+                    handled = true;
+                }
+                @return = false;
+                if (!handled)
+                {
+                    text += match.Value;
+                }
+                if (!string.IsNullOrEmpty(text))
+                {
+                    _blocks.Add(new Block(text, BlockType.Text, _gfx.MeasureString(text, _font).Width, startIndex, startIndex + text.Length));
+                }
+                if (handled)
+                {
+                    _blocks.Add(block);
+                }
+                startIndex = match.Index + match.Length;
+            }
+            if (startIndex < _text.Length)
+            {
+                var text = _text.Substring(startIndex);
+                _blocks.Add(new Block(text, BlockType.Text, _gfx.MeasureString(text, _font).Width, startIndex, startIndex + text.Length));
+            }
+        }
+
+        void CreateBlocks2()
+        {
+            _blocks.Clear();
             int length = _text.Length;
             bool inNonWhiteSpace = false;
             int startIndex = 0, blockLength = 0;
@@ -341,7 +394,7 @@ namespace PdfSharpCore.Drawing.Layout
                 {
                     if (inNonWhiteSpace)
                     {
-                        string token = _text.Substring(startIndex, blockLength);
+                        string token = _text.Substring(startIndex, blockLength + 1);
                         _blocks.Add(new Block(token, BlockType.Text,
                           _gfx.MeasureString(token, _font).Width,
                           startIndex, startIndex + blockLength - 1));
@@ -356,6 +409,7 @@ namespace PdfSharpCore.Drawing.Layout
                 else
                 {
                     inNonWhiteSpace = true;
+
                     blockLength++;
                 }
             }
@@ -379,13 +433,26 @@ namespace PdfSharpCore.Drawing.Layout
             var currentLineRect = new XRect();
             var bboxIndent = InitialXIndent;
             var numLines = 1;
+            //var lines = new List<string>();
+            //var currentLine = new List<string>();
             for (int idx = 0; idx < count; idx++)
             {
                 Block block = _blocks[idx];
+                //currentLine.Add(block.Text);
+
+                if (block.Width + InitialXIndent > rectWidth)
+                {
+                    //_blocks.InsertRange(idx, SplitBlock(block, LayoutRectangle.Width - x));
+                    _blocks.InsertRange(idx, SplitBlock(block, rectWidth - InitialXIndent));
+                    _blocks.Insert(idx, new Block(BlockType.LineBreak));
+                    _blocks.Remove(block);
+                    idx--;
+                    continue;
+                }
+
                 if (block.Type == BlockType.LineBreak)
                 {
-                    AddLineToBoundingBoxes();
-                    //Create new line
+                    CreateNewLine();
                     if (Alignment == XParagraphAlignment.Justify)
                         _blocks[firstIndex].Alignment = XParagraphAlignment.Left;
                     AlignLine(firstIndex, idx - 1, rectWidth);
@@ -400,22 +467,28 @@ namespace PdfSharpCore.Drawing.Layout
                 }
                 else
                 {
-                    double width = block.Width; //!!!modTHHO 19.11.09 don't add this.spaceWidth here
-                    if ((x + width <= rectWidth || x == 0) && block.Type != BlockType.LineBreak)
+                    if (block.Type == BlockType.Space)
+                    {
+                        //_gfx.DrawRectangle(XBrushes.Yellow, new XRect(x+_layoutRectangle.X, y+_layoutRectangle.Y, _spaceWidth, GetLineSpace()));
+                        x += _spaceWidth;
+                    }
+                    //else
+                    //{
+                    //    x = Math.Max(0, x - _spaceWidth);
+                    //}
+                    if ((x + block.Width <= rectWidth || x == 0) && block.Type != BlockType.LineBreak)
                     {
                         block.Location = new XPoint(x, y);
-                        x += width + _spaceWidth; //!!!modTHHO 19.11.09 add this.spaceWidth here                        
+                        x += block.Width; //!!!modTHHO 19.11.09 add this.spaceWidth here                        
 
                         currentLineRect =
                             new XRect(currentLineRect.X == 0 ? LayoutRectangle.Left + InitialXIndent : currentLineRect.X,
                             y + LayoutRectangle.Top,
-                            x - _spaceWidth
-                            , GetLineSpace());
+                            x, GetLineSpace());
                     }
                     else
                     {
-                        AddLineToBoundingBoxes();
-                        //Create new line
+                        CreateNewLine();
                         AlignLine(firstIndex, idx - 1, rectWidth);
                         firstIndex = idx;
                         y += GetLineSpace();
@@ -425,12 +498,36 @@ namespace PdfSharpCore.Drawing.Layout
                             break;
                         }
                         block.Location = new XPoint(0, y);
-                        x = width + _spaceWidth; //!!!modTHHO 19.11.09 add this.spaceWidth here
+                        x = block.Width; //!!!modTHHO 19.11.09 add this.spaceWidth here
                     }
                 }
                 if (idx == 0)
                 {
                     InitialXIndent = 0;
+                }
+
+                void CreateNewLine()
+                {
+                    //lines.Add(string.Join(" ", currentLine));
+                    //currentLine.Clear();
+                    if (_layoutOptions.TrimWhiteSpaces)
+                    {
+                        var lastBlockInLineId = Math.Max(0,idx - 1);
+                        while (block.Type == BlockType.Space && idx > lastBlockInLineId)
+                        {
+                            _blocks.RemoveAt(idx);
+                            idx = Math.Min(_blocks.Count - 1, idx);
+                            if (idx < 0)
+                            {
+                                break;
+                            }
+                            block = _blocks[idx];
+                        }
+                        count = _blocks.Count;
+                    }
+
+                    numLines++;
+                    AddLineToBoundingBoxes();
                 }
             }
 
@@ -439,25 +536,64 @@ namespace PdfSharpCore.Drawing.Layout
 
             if (BoundingBoxes.Count < numLines)
             {
+                //lines.Add(string.Join(" ", currentLine));
+
                 currentLineRect =
                     new XRect(LayoutRectangle.Left + bboxIndent,
                     y + LayoutRectangle.Top,
-                    Math.Max(x - _spaceWidth,0), GetLineSpace());
+                    x, GetLineSpace());
             }
             AddLineToBoundingBoxes();
 
             void AddLineToBoundingBoxes()
             {
-                numLines++;
-                //if (currentLineRect.Width != 0 && currentLineRect.Height != 0)
-                if (currentLineRect.Width != 0)
+                if (currentLineRect.Width != 0 || currentLineRect.Height != 0)
+                //if (currentLineRect.Width != 0)
                 {
                     BoundingBoxes.Add(new XRect(currentLineRect.X, currentLineRect.Y,
-                          BoundingBoxes.Count == 0 ? System.Math.Max(currentLineRect.Width - bboxIndent, 0) : currentLineRect.Width,
+                          BoundingBoxes.Count == 0 ? Math.Max(currentLineRect.Width - bboxIndent, 0) : currentLineRect.Width,
                           currentLineRect.Height));
                     currentLineRect = new XRect();
-                    bboxIndent = 0;
                 }
+                bboxIndent = 0;
+            }
+        }
+
+        private IEnumerable<Block> SplitBlock(Block block, double remainingWidth = -1)
+        {
+            if (remainingWidth == -1)
+            {
+                remainingWidth = LayoutRectangle.Width;
+            }
+            var text = block.Text;
+            Block lastLine = null;
+            var curIndex = 0;
+            while (curIndex <= text.Length)
+            {
+                var remainingText = text.Substring(curIndex);
+                for (int i = 0; i <= remainingText.Length; i++)
+                {
+                    var line = remainingText.Substring(0, i);
+                    var width = _gfx.MeasureString(line, _font).Width;
+                    if (width > remainingWidth)
+                    {
+                        yield return lastLine;
+                        curIndex += i - 1;
+                        lastLine = null;
+                        break;
+                    }
+                    else
+                    {
+                        lastLine = new Block(line, BlockType.Text, width, block.StartIndex, block.EndIndex - (block.Text.Length - remainingText.Length));
+                    }
+                }
+                //remainingWidth = remainingWidth > -1 && remainingWidth < LayoutRectangle.Width ? remainingWidth : LayoutRectangle.Width;
+                if (lastLine is not null)
+                {
+                    yield return lastLine;
+                    break;
+                }
+                remainingWidth = LayoutRectangle.Width;
             }
         }
 
@@ -466,8 +602,11 @@ namespace PdfSharpCore.Drawing.Layout
         /// </summary>
         void AlignLine(int firstIndex, int lastIndex, double layoutWidth)
         {
+            if (firstIndex < 0 || firstIndex >= _blocks.Count)
+                return;
             XParagraphAlignment blockAlignment = _blocks[firstIndex].Alignment;
-            if (_alignment == XParagraphAlignment.Left || blockAlignment == XParagraphAlignment.Left)
+            //if (_alignment == XParagraphAlignment.Left || blockAlignment == XParagraphAlignment.Left)
+            if (_alignment == XParagraphAlignment.Left)
                 return;
 
             int count = lastIndex - firstIndex + 1;
@@ -501,6 +640,31 @@ namespace PdfSharpCore.Drawing.Layout
             }
         }
 
+        public void DrawList(XFont font, XBrush brush, XRect rect, IEnumerable<string> items, double rowSpacing = 0, bool numeric = false)
+        {
+            Font = font;
+            LayoutRectangle = rect;
+            double bulletPointIndent = 5;
+            double textIndent = 5;
+            var bulletPointWidth = _gfx.MeasureString("M", _font).Width;
+            var extraWidth = bulletPointIndent + bulletPointWidth + textIndent;
+            var textRectangle = new XRect(LayoutRectangle.X + extraWidth, LayoutRectangle.Y,
+                LayoutRectangle.Width - extraWidth, LayoutRectangle.Height);
+            var position = LayoutRectangle.Location;
+            int i = 1;
+            foreach (var item in items)
+            {
+                //_gfx.DrawString(numeric ? i++.ToString() : BULLET_POINT, _font, brush, new XPoint(position.X + bulletPointIndent, position.Y));
+                DrawString(numeric ? $"{i++}." : BULLET_POINT, _font, brush, new XRect(position.X + bulletPointIndent, position.Y, bulletPointWidth + textIndent, rowSpacing));
+                DrawString(item, _font, brush, textRectangle);
+                if (LastLineRect.HasValue)
+                {
+                    position = new XPoint(position.X, LastLineRect.Value.Bottom + rowSpacing);
+                    textRectangle = new XRect(new XPoint(textRectangle.X, position.Y), textRectangle.Size);
+                }
+            }
+        }
+
         readonly List<Block> _blocks = new List<Block>();
 
         enum BlockType
@@ -524,7 +688,7 @@ namespace PdfSharpCore.Drawing.Layout
             public Block(string text, BlockType type, double width, int startIndex, int endIndex)
             {
                 Text = text;
-                Type = type;
+                Type = string.IsNullOrWhiteSpace(text) ? BlockType.Space : type;
                 Width = width;
                 StartIndex = startIndex;
                 EndIndex = endIndex;
@@ -537,6 +701,7 @@ namespace PdfSharpCore.Drawing.Layout
             public Block(BlockType type)
             {
                 Type = type;
+                Text = type == BlockType.Space ? " " : null;
             }
 
             /// <summary>
@@ -572,7 +737,6 @@ namespace PdfSharpCore.Drawing.Layout
             /// </summary>
             public bool Stop;
         }
-        // TODO:
         // - more XStringFormat variations
         // - left and right indent
         // - margins and paddings

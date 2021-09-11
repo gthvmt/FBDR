@@ -14,8 +14,6 @@ namespace FBDR.ViewModels
     {
         #region Fields
         private string _StatusText;
-        private Visibility _Visibility;
-        //private bool _WantsToBeVisible;
         private int _ProgressMax;
         private int _Progress;
         #endregion

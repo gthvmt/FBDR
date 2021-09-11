@@ -5,9 +5,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:FBDR"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-             xmlns:prism="http://www.codeplex.com/prism" xmlns:tk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             xmlns:prism="http://www.codeplex.com/prism"
+             xmlns:tk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:controls="clr-namespace:FBDR.Controls" xmlns:conv="clr-namespace:FBDR.Converter" xmlns:options="clr-namespace:FBDR.Views.Options"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <conv:IntToColorConverter x:Key="IntToColorConverter"/>
+    </UserControl.Resources>
+
     <Grid>
         <!--<Button Content="test" HorizontalAlignment="Right" Panel.ZIndex="420" Height="50" VerticalAlignment="Top"/>-->
         <Button Command="{Binding Path=CloseCommand}" Panel.ZIndex="420" Height="17"
@@ -19,7 +25,7 @@
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type Button}">
                                 <Grid Background="Transparent">
-                                    <Ellipse x:Name="backgroundEllipse" />
+                                    <Rectangle x:Name="backgroundEllipse" />
                                     <Path x:Name="cross"
                                           Stroke="{StaticResource FacebookBlue}"
                                           StrokeThickness="1.5"
@@ -64,99 +70,13 @@
             </TabControl.Resources>
             <TabItem Width="25" Visibility="Hidden" TabIndex="99"/>
             <TabItem Header="{x:Static local:OptionSections.GeneralSection}">
-                <Grid Margin="5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="col" Width="auto" MaxWidth="200"/>
-                        <ColumnDefinition Width="*" MaxWidth="500"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <CheckBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
-                              Content="Dateien mit gleichem Dateinamen überschreiben"
-                               IsChecked="{Binding Path=Options.OverwriteFiles}" VerticalAlignment="Center">
-                        <i:Interaction.Triggers>
-                            <i:EventTrigger EventName="Checked">
-                                <prism:InvokeCommandAction Command="{Binding OptionsChangedCommand}"/>
-                            </i:EventTrigger>
-                        </i:Interaction.Triggers>
-                    </CheckBox>
-                    <!--FontWeight="{Binding DefaultFontSampleWeight}"/>-->
-                </Grid>
+                <options:General/>
             </TabItem>
             <TabItem Header="{x:Static local:OptionSections.FontsSection}">
-                <Grid Margin="5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="auto"/>
-                        <ColumnDefinition Width="*" MaxWidth="500"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Standardschriftart:" Margin="0,0,5,5" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Beispiel" MaxHeight="75"
-                               VerticalAlignment="Center"
-                               FontFamily="{Binding Options.DefaultFont.FontFamily.Name}"
-                               FontSize="{Binding Options.DefaultFont.Size}">
-                        <i:Interaction.Triggers>
-                            <i:EventTrigger EventName="MouseDown">
-                                <prism:InvokeCommandAction Command="{Binding SetFontCommand}"/>
-                            </i:EventTrigger>
-                        </i:Interaction.Triggers>
-                    </TextBlock>
-                    <!--FontWeight="{Binding DefaultFontSampleWeight}"/>-->
-                </Grid>
+                <options:Fonts/>
             </TabItem>
             <TabItem Header="{x:Static local:OptionSections.MarginsSection}">
-                <Grid Margin="5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="auto"/>
-                        <ColumnDefinition Width="*" MaxWidth="500"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition Height="5"/>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition Height="5"/>
-                        <RowDefinition Height="auto"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Rand Links/Rechts:" Margin="0,0,5,5" VerticalAlignment="Center"/>
-                    <tk:DoubleUpDown Grid.Column="1" Value="{Binding Options.MarginLR}" Minimum="0"
-                                     MinWidth="50" MaxWidth="100"
-                                     HorizontalAlignment="Left">
-                        <i:Interaction.Triggers>
-                            <i:EventTrigger EventName="ValueChanged">
-                                <prism:InvokeCommandAction Command="{Binding OptionsChangedCommand}"/>
-                            </i:EventTrigger>
-                        </i:Interaction.Triggers>
-                    </tk:DoubleUpDown>
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Zeilenabstand:" Margin="0,0,5,5" VerticalAlignment="Center"/>
-                    <tk:DoubleUpDown Grid.Row="2" Grid.Column="1" Value="{Binding Options.LineSpacing}" Minimum="0"
-                                     MinWidth="50" MaxWidth="100"
-                                     HorizontalAlignment="Left">
-                        <i:Interaction.Triggers>
-                            <i:EventTrigger EventName="ValueChanged">
-                                <prism:InvokeCommandAction Command="{Binding OptionsChangedCommand}"/>
-                            </i:EventTrigger>
-                        </i:Interaction.Triggers>
-                    </tk:DoubleUpDown>
-                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Absatzabstand:" Margin="0,0,5,5" VerticalAlignment="Center"/>
-                    <tk:DoubleUpDown Grid.Row="4" Grid.Column="1" Value="{Binding Options.ParagraphSpacing}" Minimum="0"
-                                     MinWidth="50" MaxWidth="100"
-                                     HorizontalAlignment="Left">
-                        <i:Interaction.Triggers>
-                            <i:EventTrigger EventName="ValueChanged">
-                                <prism:InvokeCommandAction Command="{Binding OptionsChangedCommand}"/>
-                            </i:EventTrigger>
-                        </i:Interaction.Triggers>
-                    </tk:DoubleUpDown>
-                </Grid>
+                <options:Margins/>
             </TabItem>
         </TabControl>
     </Grid>

@@ -33,10 +33,19 @@ namespace FBDR
             Directory.CreateDirectory(Path.GetDirectoryName(options.FilePath));
             if (File.Exists(options.FilePath))
             {
-                var loadedOptions = Models.Serializer.ReadFromBinaryFile<Models.Options>(options.FilePath);
-                foreach (var property in typeof(Models.Options).GetProperties().Where(p => p.CanWrite))
+                try
                 {
-                    property.SetValue(options, property.GetValue(loadedOptions, null), null);
+                    var loadedOptions = Models.Serializer.ReadFromFile<Models.Options>(options.FilePath);
+                    foreach (var property in typeof(Models.Options).GetProperties().Where(p => p.CanWrite))
+                    {
+                        var val = property.GetValue(loadedOptions, null);
+                        property.SetValue(options, val, null);
+                    }
+                }
+                catch
+                {
+                    File.Delete(options.FilePath);
+                    options.ResetAll();
                 }
             }
             else

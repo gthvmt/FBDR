@@ -21,7 +21,7 @@ namespace FBDR.ViewModels
     {
         #region Constants
         private const string FOLDER_NAME = "Facebook Dokumente (PDF)";
-        private const string RENDERING_STATUS_TEXT = "Rendere Dokument {0}/{1}";
+        private const string RENDERING_STATUS_TEXT = "Rendere {0}/{1} (\"{2}\")";
         #endregion
 
         #region Fields
@@ -29,8 +29,9 @@ namespace FBDR.ViewModels
         private ObservableCollection<SelectedPath> _SelectedPaths;
         private ICommand _RenderCommand;
         private FacebookDocumentRenderer _Renderer;
-        private ICommand _ConfigureOptions;
-        private DelegateCommand _SelectDirectoriesCommand;
+        private ICommand _ConfigureOptionsCommand;
+        private ICommand _SelectDirectoriesCommand;
+        private ICommand _DeletePathCommand;
         #endregion
         #region Properies
         public ICommand SelectFilesCommand => _SelectFilesCommand ??=
@@ -41,8 +42,11 @@ namespace FBDR.ViewModels
         public ICommand RenderCommand => _RenderCommand ??=
             new DelegateCommand(Render, CanRender);
 
-        public ICommand ConfigureOptionsCommand => _ConfigureOptions ??=
+        public ICommand ConfigureOptionsCommand => _ConfigureOptionsCommand ??=
             new DelegateCommand<string>(ConfigureOptions);
+
+        public ICommand DeletePathCommand => _DeletePathCommand ??=
+            new DelegateCommand<SelectedPath>(DeletePath);
 
         public ObservableCollection<SelectedPath> SelectedPaths => _SelectedPaths ??=
             new ObservableCollection<SelectedPath>();
@@ -52,6 +56,7 @@ namespace FBDR.ViewModels
         public IRegionManager RegionManager { get; }
         public IEventAggregator EventAggregator { get; }
         public Options Options { get; }
+        public bool RenderingInProgress { get; private set; }
         #endregion
 
         #region Constructors
@@ -67,6 +72,9 @@ namespace FBDR.ViewModels
         private void ConfigureOptions(string optionSection)
             => RegionManager.RequestNavigate(RegionNames.ContentRegion,
                 $"{nameof(Views.OptionsView)}?section={optionSection}");
+
+        private void DeletePath(SelectedPath path)
+            => SelectedPaths.Remove(path);
 
         private void SelectFiles()
         {
@@ -102,26 +110,32 @@ namespace FBDR.ViewModels
 
         private async void Render()
         {
+            RenderingInProgress = true;
+            ((DelegateCommand)RenderCommand).RaiseCanExecuteChanged();
+
             var dirName = Path.GetDirectoryName(SelectedPaths[0].Path);
             var dir = Directory.CreateDirectory(Path.Combine(dirName, FOLDER_NAME)).FullName;
 
-            var count = GetTotalFileCount();
             SendStatusUpdate(new Events.StatusUpdateEventArgs()
             {
-                Status = string.Format(RENDERING_STATUS_TEXT, "0", count),
+                Status = "Zähle Dateien",
+            });
+
+            var count = await GetTotalFileCount();
+
+            SendStatusUpdate(new Events.StatusUpdateEventArgs()
+            {
+                //Status = string.Empty,
                 ProgressMax = count
             });
+
             int i = 1;
             foreach (var selectedPath in SelectedPaths)
             {
                 var path = selectedPath.Path;
                 if (selectedPath.Type == PathType.File)
                 {
-                    SendStatusUpdate(new Events.StatusUpdateEventArgs()
-                    {
-                        Status = string.Format(RENDERING_STATUS_TEXT, i, count),
-                        Progress = i++
-                    });
+                    UpdateRenderingState(path);
                     await RenderFile(path, CoerceFileName(path, dir));
                 }
                 else if (selectedPath.Type == PathType.Directory)
@@ -130,11 +144,8 @@ namespace FBDR.ViewModels
                     {
                         if (file.EndsWith(".html") || file.EndsWith(".htm"))
                         {
-                            SendStatusUpdate(new Events.StatusUpdateEventArgs()
-                            {
-                                Status = string.Format(RENDERING_STATUS_TEXT, i, count),
-                                Progress = i++
-                            });
+                            UpdateRenderingState(file);
+                            System.Diagnostics.Debug.WriteLine(file);
                             await RenderFile(file, CoerceFileName(file, dir));
                         }
                     }
@@ -147,12 +158,7 @@ namespace FBDR.ViewModels
                     {
                         if (Path.GetExtension(entry.Name).ToLower().StartsWith(".htm"))
                         {
-                            SendStatusUpdate(new Events.StatusUpdateEventArgs()
-                            {
-                                Status = string.Format(RENDERING_STATUS_TEXT, i, count),
-                                Progress = i++
-                            });
-
+                            UpdateRenderingState(entry.Name);
                             using var streamReader = new StreamReader(entry.Open());
                             var html = await streamReader.ReadToEndAsync();
                             Console.WriteLine(entry.FullName);
@@ -169,7 +175,17 @@ namespace FBDR.ViewModels
                 Progress = 0,
                 ProgressMax = 0
             });
-            System.Diagnostics.Process.Start("explorer.exe", dir);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo() { FileName = dir, UseShellExecute = true });
+           
+
+            void UpdateRenderingState(string docPath)
+            => SendStatusUpdate(new Events.StatusUpdateEventArgs()
+            {
+                Status = string.Format(RENDERING_STATUS_TEXT, i, count, Path.GetFileNameWithoutExtension(docPath)),
+                Progress = i++
+            });
+            RenderingInProgress = false;
+            ((DelegateCommand)RenderCommand).RaiseCanExecuteChanged();
         }
 
         private string CoerceFileName(string fileName, string dirName)
@@ -188,50 +204,53 @@ namespace FBDR.ViewModels
             return Path.Combine(dirName, pdfName);
         }
 
-        private int GetTotalFileCount(string initialPath = null)
+        private async Task<int> GetTotalFileCount(string initialPath = null)
         {
             int count = 0;
-            foreach (var selectedPath in SelectedPaths)
+            await Task.Run(() =>
             {
-                var path = selectedPath.Path.ToLower();
-                switch (selectedPath.Type)
+                foreach (var selectedPath in SelectedPaths)
                 {
-                    case PathType.File:
-                        count++;
-                        break;
-                    case PathType.Directory:
-                        foreach (var file in Directory.EnumerateFiles(path))
-                        {
-                            if (file.EndsWith(".html") || file.EndsWith(".htm"))
+                    var path = selectedPath.Path.ToLower();
+                    switch (selectedPath.Type)
+                    {
+                        case PathType.File:
+                            count++;
+                            break;
+                        case PathType.Directory:
+                            foreach (var file in Directory.EnumerateFiles(path))
                             {
-                                count++;
-                            }
-                            //else if (file.EndsWith(".zip"))
-                            //{
-                            //    count += GetTotalFileCount(file);
-                            //}
-                        }
-                        break;
-                    case PathType.Archive:
-                        using (var file = File.OpenRead(path))
-                        {
-                            using (var zip = new ZipArchive(file, ZipArchiveMode.Read))
-                            {
-                                foreach (var entry in zip.Entries)
+                                if (file.EndsWith(".html") || file.EndsWith(".htm"))
                                 {
-                                    var fileName = entry.FullName;
-                                    if (fileName.EndsWith(".html") || fileName.EndsWith(".htm"))
+                                    count++;
+                                }
+                                //else if (file.EndsWith(".zip"))
+                                //{
+                                //    count += GetTotalFileCount(file);
+                                //}
+                            }
+                            break;
+                        case PathType.Archive:
+                            using (var file = File.OpenRead(path))
+                            {
+                                using (var zip = new ZipArchive(file, ZipArchiveMode.Read))
+                                {
+                                    foreach (var entry in zip.Entries)
                                     {
-                                        count++;
+                                        var fileName = entry.FullName;
+                                        if (fileName.EndsWith(".html") || fileName.EndsWith(".htm"))
+                                        {
+                                            count++;
+                                        }
                                     }
                                 }
                             }
-                        }
-                        break;
-                    default:
-                        break;
+                            break;
+                        default:
+                            break;
+                    }
                 }
-            }
+            });
             return count;
         }
 
@@ -242,7 +261,7 @@ namespace FBDR.ViewModels
             await File.WriteAllBytesAsync(to, bytes);
         }
 
-        private bool CanRender() => SelectedPaths.Count > 0;
+        private bool CanRender() => SelectedPaths.Count > 0 && !RenderingInProgress;
         #endregion
     }
 }

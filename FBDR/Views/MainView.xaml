@@ -80,6 +80,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="auto"/>
                                     <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="auto"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid Grid.Column="0" Width="50" Height="50" Margin="5" Background="{StaticResource FacebookBlue}">
                                     <ContentControl Margin="10" HorizontalAlignment="Center">
@@ -107,6 +108,63 @@
                                     <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
                                     <TextBlock Text="{Binding Path}"/>
                                 </StackPanel>
+                                <Button Grid.Column="2" Margin="5,0,0,0" Cursor="Hand" x:Name="DeleteButton" Width="0"
+                                        Command="{Binding Path=DataContext.DeletePathCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Style>
+                                        <Style TargetType="{x:Type Button}">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="{x:Type Button}">
+                                                        <Grid Background="Transparent">
+                                                            <Rectangle Fill="{StaticResource FacebookBlue}" Stretch="UniformToFill"/>
+                                                            <Path x:Name="cross"
+                                                              Stroke="White"
+                                                              StrokeThickness="1.5"
+                                                              StrokeStartLineCap="Square"
+                                                              StrokeEndLineCap="Square"
+                                                              Stretch="Uniform"
+                                                              Margin="25">
+                                                                <Path.Data>
+                                                                    <PathGeometry>
+                                                                        <PathGeometry.Figures>
+                                                                            <PathFigure StartPoint="0,0">
+                                                                                <LineSegment Point="1,1"/>
+                                                                            </PathFigure>
+                                                                            <PathFigure StartPoint="0,1">
+                                                                                <LineSegment Point="1,0"/>
+                                                                            </PathFigure>
+                                                                        </PathGeometry.Figures>
+                                                                    </PathGeometry>
+                                                                </Path.Data>
+                                                            </Path>
+                                                        </Grid>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Grid.Triggers>
+                                    <EventTrigger RoutedEvent="Grid.MouseEnter">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="DeleteButton"
+                                                    Storyboard.TargetProperty="Width"
+                                                    From="0" To="{Binding ActualHeight, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Grid}}}" Duration="0:0:0.1" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                    <EventTrigger RoutedEvent="Grid.MouseLeave">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="DeleteButton"
+                                                    Storyboard.TargetProperty="(Grid.Width)"
+                                                    From="{Binding ActualHeight, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Grid}}}" To="0" Duration="0:0:0.05" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Grid.Triggers>
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

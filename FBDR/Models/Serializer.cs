@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace FBDR.Models
 {
@@ -18,12 +19,12 @@ namespace FBDR.Models
         /// <param name="filePath">The file path to write the object instance to.</param>
         /// <param name="objectToWrite">The object instance to write to the XML file.</param>
         /// <param name="append">If false the file will be overwritten if it already exists. If true the contents will be appended to the file.</param>
-        public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false)
+        public static void WriteToFile<T>(string filePath, T objectToWrite, bool append = false)
         {
             using (var stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create))
             {
-                var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                binaryFormatter.Serialize(stream, objectToWrite);
+                var serializer = new XmlSerializer(typeof(T));
+                serializer.Serialize(stream, objectToWrite);
             }
         }
 
@@ -33,12 +34,12 @@ namespace FBDR.Models
         /// <typeparam name="T">The type of object to read from the XML.</typeparam>
         /// <param name="filePath">The file path to read the object instance from.</param>
         /// <returns>Returns a new instance of the object read from the binary file.</returns>
-        public static T ReadFromBinaryFile<T>(string filePath)
+        public static T ReadFromFile<T>(string filePath)
         {
             using (Stream stream = File.Open(filePath, FileMode.Open))
             {
-                var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                return (T)binaryFormatter.Deserialize(stream);
+                var serializer = new XmlSerializer(typeof(T));
+                return (T)serializer.Deserialize(stream);
             }
         }
     }
